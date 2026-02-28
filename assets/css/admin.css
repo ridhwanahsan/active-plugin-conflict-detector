@@ -1,0 +1,40 @@
+/* Admin UI styles for APCD */
+.apcd-wrap .apcd-badge{
+	display:inline-block;
+	padding:2px 6px;
+	border-radius:3px;
+	font-size:11px;
+	line-height:1.6;
+	color:#fff;
+}
+.apcd-green{background:#46b450;}
+.apcd-orange{background:#ffb900;}
+.apcd-red{background:#dc3232;}
+.apcd-gray{background:#777;}
+
+.apcd-scan{margin:12px 0;}
+.apcd-progress{
+	position:relative;
+	height:10px;
+	background:#f0f0f0;
+	border-radius:4px;
+	overflow:hidden;
+	margin-top:8px;
+	max-width:460px;
+}
+.apcd-progress-bar{
+	height:100%;
+	width:0%;
+	background:#2271b1;
+	transition:width 0.6s ease;
+}
+.apcd-scan-result{
+	margin-top:12px;
+}
+.apcd-status{
+	padding:8px 12px;
+	border-radius:4px;
+	color:#fff;
+	display:inline-block;
+}
+
