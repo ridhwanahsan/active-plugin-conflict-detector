@@ -56,6 +56,65 @@ function apcd_run() {
 	$export  = new APCD_Exporter( $logger );
 	$admin   = new APCD_Admin( $scanner, $export, $logger, $loader );
 
+	$loader->add_action( 'apcd_scheduled_scan', $scanner, 'run_smart_scan_cron' );
+	add_filter(
+		'cron_schedules',
+		static function ( $schedules ) {
+			if ( ! isset( $schedules['weekly'] ) ) {
+				$schedules['weekly'] = array(
+					'interval' => 7 * DAY_IN_SECONDS,
+					'display'  => __( 'Once Weekly' ),
+				);
+			}
+			return $schedules;
+		}
+	);
+	add_action(
+		'init',
+		static function () {
+			$schedule = get_option( 'apcd_scan_schedule', 'daily' );
+			$next     = wp_next_scheduled( 'apcd_scheduled_scan' );
+			$valid    = in_array( $schedule, array( 'daily', 'weekly' ), true ) ? $schedule : 'daily';
+			if ( ! $next ) {
+				wp_schedule_event( time() + HOUR_IN_SECONDS, $valid, 'apcd_scheduled_scan' );
+			} else {
+				$crons = _get_cron_array();
+				// If interval changed, clear and reschedule.
+				if ( is_array( $crons ) ) {
+					$curr = '';
+					foreach ( $crons as $ts => $hooks ) {
+						if ( isset( $hooks['apcd_scheduled_scan'] ) ) {
+							$curr = $hooks['apcd_scheduled_scan']['schedule'] ?? '';
+							break;
+						}
+					}
+					if ( $curr !== $valid ) {
+						wp_clear_scheduled_hook( 'apcd_scheduled_scan' );
+						wp_schedule_event( time() + HOUR_IN_SECONDS, $valid, 'apcd_scheduled_scan' );
+					}
+				}
+			}
+		}
+	);
+	add_action(
+		'upgrader_process_complete',
+		static function () {
+			if ( ! wp_next_scheduled( 'apcd_scheduled_scan' ) ) {
+				wp_schedule_single_event( time() + 300, 'apcd_scheduled_scan' );
+			}
+		},
+		10,
+		0
+	);
+	add_action(
+		'activated_plugin',
+		static function () {
+			wp_schedule_single_event( time() + 300, 'apcd_scheduled_scan' );
+		},
+		10,
+		0
+	);
+
 	// Load translations.
 	add_action(
 		'plugins_loaded',
@@ -76,6 +135,9 @@ function apcd_activate() {
 	if ( ! current_user_can( 'activate_plugins' ) ) {
 		return;
 	}
+	if ( ! wp_next_scheduled( 'apcd_scheduled_scan' ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'apcd_scheduled_scan' );
+	}
 }
 register_activation_hook( __FILE__, 'apcd_activate' );
 
@@ -86,6 +148,6 @@ function apcd_deactivate() {
 	if ( ! current_user_can( 'activate_plugins' ) ) {
 		return;
 	}
+	wp_clear_scheduled_hook( 'apcd_scheduled_scan' );
 }
 register_deactivation_hook( __FILE__, 'apcd_deactivate' );
-

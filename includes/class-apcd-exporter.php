@@ -85,6 +85,7 @@ class APCD_Exporter {
 			'site'           => $site,
 			'active_plugins' => $plugins_data,
 			'error_logs'     => $log_lines,
+			'scan_history'   => get_option( 'apcd_scan_history', array() ),
 		);
 
 		nocache_headers();
@@ -94,4 +95,3 @@ class APCD_Exporter {
 		exit;
 	}
 }
-
